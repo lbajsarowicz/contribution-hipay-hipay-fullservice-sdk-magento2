@@ -18,48 +18,34 @@
 
 namespace HiPay\FullserviceMagento\Test\Unit\Model;
 
-use Magento\Payment\Helper\Data;
-use HiPay\FullserviceMagento\Model\Config as CcConfig;
-use HiPay\FullserviceMagento\Model\Methid\Providers\CcConfigProvider;
+use HiPay\FullserviceMagento\Model\Config;
+use HiPay\FullserviceMagento\Model\Method\Providers\CcConfigProvider;
+use PHPUnit\Framework\TestCase;
 
-class CcConfigProviderTest extends \PHPUnit_Framework_TestCase
+class CcConfigProviderTest extends TestCase
 {
     /**
-     * @var CcConfigProvider
+     * Verify inactive payment methods do not contribute checkout configuration.
      */
-    protected $model;
-
-    /**
-     * @var CcConfig|\PHPUnit_Framework_MockObject_MockObject
-     */
-    protected $ccConfigMock;
-
-    /**
-     * @var Data|\PHPUnit_Framework_MockObject_MockObject
-     */
-    protected $paymentHelperMock;
-
-    protected function setUp()
+    public function testGetConfig(): void
     {
-        //$this->markTestSkipped("Not implemented yet!");
-        //return;
-
-        $this->ccConfigMock = $this->getMockBuilder('Magento\Payment\Model\CcConfig')
+        $config = $this->getMockBuilder(Config::class)
             ->disableOriginalConstructor()
+            ->onlyMethods(['isPaymentMethodActive', 'setMethodCode'])
             ->getMock();
+        $config->expects($this->exactly(2))->method('isPaymentMethodActive')->willReturn(false);
+        $config->expects($this->exactly(2))->method('setMethodCode');
 
-        $this->paymentHelperMock = $this->getMock('Magento\Payment\Helper\Data', [], [], '', false);
+        $provider = new class ($config) extends CcConfigProvider {
+            /**
+             * @param Config $config
+             */
+            public function __construct(Config $config)
+            {
+                $this->_hipayConfig = $config;
+            }
+        };
 
-        /* $this->model = new CcConfigProvider(
-             $this->ccConfigMock,
-             $this->paymentHelperMock,
-             array()
-         );*/
-    }
-
-    public function testGetConfig()
-    {
-        //$this->assertEquals([], $this->model->getConfig());
-        $this->assertEquals(1, 1);
+        $this->assertSame([], $provider->getConfig());
     }
 }
